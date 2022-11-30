@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import FullCalendar, { formatDate } from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
@@ -14,11 +14,31 @@ import {
 } from "@mui/material";
 import Header from "../../components/Header";
 import { tokens } from "../../theme";
+import CalendarDataService from "../../services/api/calendar";
 
 const Calendar = () => {
     const theme = useTheme();
     const colors = tokens(theme.palette.mode);
     const [currentEvents, setCurrentEvents] = useState([]);
+    let initialEvents = [];
+    const [singleEvent, setSingleEvent] = useState({});
+    const [areEvents, setAreEvents] = useState(false);
+
+    const getEvents = async (owner_id) => {
+        const data = await CalendarDataService.getEvents(owner_id).then(
+            (response) => {
+                return response.data;
+            }
+        );
+        setCurrentEvents(data);
+        initialEvents = data;
+        console.log(initialEvents);
+        setAreEvents(true);
+    };
+
+    const memoizedEventsFn = useMemo(() => {
+        return getEvents(1);
+    }, []);
 
     const handleDateClick = (selected) => {
         const title = prompt("Please enter a new title for your event");
@@ -33,6 +53,10 @@ const Calendar = () => {
                 end: selected.endStr,
                 allDay: selected.allDay,
             });
+            currentEvents.forEach((event) => {
+                calendarApi.addEvent(event);
+            });
+            console.log(calendarApi.getEvents());
         }
     };
 
@@ -45,6 +69,10 @@ const Calendar = () => {
             selected.event.remove();
         }
     };
+
+    useEffect(() => {
+        getEvents(1);
+    }, []);
 
     return (
         <Box m="20px">
@@ -62,7 +90,7 @@ const Calendar = () => {
                     <List>
                         {currentEvents.map((event) => (
                             <ListItem
-                                key={event.id}
+                                //key={event.id}
                                 sx={{
                                     backgroundColor: colors.greenAccent[500],
                                     margin: "10px 0",
@@ -109,18 +137,18 @@ const Calendar = () => {
                         select={handleDateClick}
                         eventClick={handleEventClick}
                         eventsSet={(events) => setCurrentEvents(events)}
-                        initialEvents={[
-                            {
-                                id: "12315",
-                                title: "All-day event",
-                                date: "2022-11-14",
-                            },
-                            {
-                                id: "5123",
-                                title: "Timed event",
-                                date: "2022-11-28",
-                            },
-                        ]}
+                        // initialEvents={[{
+                        //     title: "Event Now",
+                        //     start: "2022-11-08T09:00:00.000Z",
+                        //     end: "2022-11-08T09:00:00.000Z",
+                        //     allDay: true,
+                        // }]}
+                        initialEvents={areEvents ? initialEvents : [{
+                            title: "Event Now",
+                            start: "2022-11-08T09:00:00.000Z",
+                            end: "2022-11-08T09:00:00.000Z",
+                            allDay: true,
+                        }]}
                     />
                 </Box>
             </Box>
