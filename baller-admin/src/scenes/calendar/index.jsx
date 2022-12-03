@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import FullCalendar, { formatDate } from "@fullcalendar/react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import FullCalendar, { EventApi, formatDate } from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
@@ -20,25 +20,37 @@ const Calendar = () => {
     const theme = useTheme();
     const colors = tokens(theme.palette.mode);
     const [currentEvents, setCurrentEvents] = useState([]);
-    let initialEvents = [];
-    const [singleEvent, setSingleEvent] = useState({});
-    const [areEvents, setAreEvents] = useState(false);
 
-    const getEvents = async (owner_id) => {
-        const data = await CalendarDataService.getEvents(owner_id).then(
-            (response) => {
-                return response.data;
-            }
-        );
-        setCurrentEvents(data);
-        initialEvents = data;
-        console.log(initialEvents);
-        setAreEvents(true);
+    const [areEvents, setAreEvents] = useState(false);
+    const calendarRef = useRef(null);
+
+    function sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    const initCalendarEvents = () => {
+
+        if (areEvents) {
+            currentEvents.forEach((event) => {
+                calendarRef.current.getApi().addEvent(event);
+                sleep(500);
+                console.log("event added");
+            });
+            console.log(calendarRef.current.getApi().getEvents());
+        } else {
+            console.log("no events");
+        }
+
     };
 
-    const memoizedEventsFn = useMemo(() => {
-        return getEvents(1);
-    }, []);
+    const saveEvent = (event) => {
+        CalendarDataService.createEvent(JSON.stringify(event)).then((response) => {
+            console.log(response.data);
+        }).catch((e) => {
+            console.log(e);
+        });
+    };
+
 
     const handleDateClick = (selected) => {
         const title = prompt("Please enter a new title for your event");
@@ -53,11 +65,26 @@ const Calendar = () => {
                 end: selected.endStr,
                 allDay: selected.allDay,
             });
-            currentEvents.forEach((event) => {
-                calendarApi.addEvent(event);
-            });
-            console.log(calendarApi.getEvents());
+            const new_event = {
+                title: title,
+                start: selected.startStr,
+                end: selected.endStr,
+                allDay: selected.allDay,
+                owner_id: 1,
+            };
+            console.log(new_event);
+            saveEvent(new_event);
         }
+    };
+
+    const getEvents = async (owner_id) => {
+        const data = await CalendarDataService.getEvents(owner_id).then(
+            (response) => {
+                return response.data;
+            }
+        );
+        setAreEvents(true);
+        setCurrentEvents(data);
     };
 
     const handleEventClick = (selected) => {
@@ -72,7 +99,10 @@ const Calendar = () => {
 
     useEffect(() => {
         getEvents(1);
-    }, []);
+        initCalendarEvents();
+        setCurrentEvents(calendarRef.current.getApi().getEvents());
+
+    }, [areEvents]);
 
     return (
         <Box m="20px">
@@ -117,6 +147,7 @@ const Calendar = () => {
                 {/* CALENDAR */}
                 <Box flex="1 1 100%" ml="15px">
                     <FullCalendar
+                        ref={calendarRef}
                         height="75vh"
                         plugins={[
                             dayGridPlugin,
@@ -137,18 +168,8 @@ const Calendar = () => {
                         select={handleDateClick}
                         eventClick={handleEventClick}
                         eventsSet={(events) => setCurrentEvents(events)}
-                        // initialEvents={[{
-                        //     title: "Event Now",
-                        //     start: "2022-11-08T09:00:00.000Z",
-                        //     end: "2022-11-08T09:00:00.000Z",
-                        //     allDay: true,
-                        // }]}
-                        initialEvents={areEvents ? initialEvents : [{
-                            title: "Event Now",
-                            start: "2022-11-08T09:00:00.000Z",
-                            end: "2022-11-08T09:00:00.000Z",
-                            allDay: true,
-                        }]}
+                    //initialEvents={areEvents ? currentEvents : initialEvents}
+                    //eventSources={[currentEvents]}
                     />
                 </Box>
             </Box>

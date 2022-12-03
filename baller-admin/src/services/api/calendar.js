@@ -14,6 +14,10 @@ class CalendarDataService {
         return httpCommon.get(`calendar/events/${owner_id}`);
     }
 
+    createEvent(event) {
+        return httpCommon.post("calendar/event", event);
+    }
+
 }
 
 export default new CalendarDataService();
