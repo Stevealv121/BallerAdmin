@@ -43,6 +43,15 @@ const Calendar = () => {
 
     };
 
+    const editEvent = (selected) => {
+        const eventEdited = selected.event.toPlainObject({ collapseExtendedProps: true });
+        CalendarDataService.editEvent(JSON.stringify(eventEdited)).then((response) => {
+            console.log(response.data);
+        }).catch((e) => {
+            console.log(e);
+        });
+    };
+
     const saveEvent = (event) => {
         CalendarDataService.createEvent(JSON.stringify(event)).then((response) => {
             console.log(response.data);
@@ -101,7 +110,6 @@ const Calendar = () => {
         getEvents(1);
         initCalendarEvents();
         setCurrentEvents(calendarRef.current.getApi().getEvents());
-
     }, [areEvents]);
 
     return (
@@ -168,8 +176,7 @@ const Calendar = () => {
                         select={handleDateClick}
                         eventClick={handleEventClick}
                         eventsSet={(events) => setCurrentEvents(events)}
-                    //initialEvents={areEvents ? currentEvents : initialEvents}
-                    //eventSources={[currentEvents]}
+                        eventDrop={editEvent}
                     />
                 </Box>
             </Box>

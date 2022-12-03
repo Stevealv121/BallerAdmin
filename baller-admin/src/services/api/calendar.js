@@ -18,6 +18,10 @@ class CalendarDataService {
         return httpCommon.post("calendar/event", event);
     }
 
+    editEvent(event) {
+        return httpCommon.put("calendar/event", event);
+    }
+
 }
 
 export default new CalendarDataService();
