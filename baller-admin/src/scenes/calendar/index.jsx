@@ -20,7 +20,7 @@ const Calendar = () => {
     const theme = useTheme();
     const colors = tokens(theme.palette.mode);
     const [currentEvents, setCurrentEvents] = useState([]);
-
+    const newEventRef = useRef(null);
     const [areEvents, setAreEvents] = useState(false);
     const calendarRef = useRef(null);
 
@@ -52,28 +52,22 @@ const Calendar = () => {
         });
     };
 
-    const saveEvent = (event) => {
-        CalendarDataService.createEvent(JSON.stringify(event)).then((response) => {
+    const saveEvent = async (event) => {
+        await CalendarDataService.createEvent(JSON.stringify(event)).then((response) => {
             console.log(response.data);
+            newEventRef.current = response.data;
         }).catch((e) => {
             console.log(e);
         });
     };
 
 
-    const handleDateClick = (selected) => {
+    const handleDateClick = async (selected) => {
         const title = prompt("Please enter a new title for your event");
         const calendarApi = selected.view.calendar;
         calendarApi.unselect();
 
         if (title) {
-            calendarApi.addEvent({
-                id: `${selected.dateStr}-${title}`,
-                title,
-                start: selected.startStr,
-                end: selected.endStr,
-                allDay: selected.allDay,
-            });
             const new_event = {
                 title: title,
                 start: selected.startStr,
@@ -81,9 +75,26 @@ const Calendar = () => {
                 allDay: selected.allDay,
                 owner_id: 1,
             };
-            console.log(new_event);
-            saveEvent(new_event);
+            await saveEvent(new_event);
+            calendarApi.addEvent({
+                id: newEventRef.current._id,
+                title,
+                start: selected.startStr,
+                end: selected.endStr,
+                allDay: selected.allDay,
+                extendedProps: {
+                    _id: newEventRef.current._id,
+                },
+            });
         }
+    };
+
+    const deleteEvent = (id) => {
+        CalendarDataService.deleteEvent(id).then((response) => {
+            console.log(response.data);
+        }).catch((e) => {
+            console.log(e);
+        });
     };
 
     const getEvents = async (owner_id) => {
@@ -103,6 +114,8 @@ const Calendar = () => {
             )
         ) {
             selected.event.remove();
+            const eventToDelete = selected.event.toPlainObject({ collapseExtendedProps: true });
+            deleteEvent(eventToDelete._id);
         }
     };
 

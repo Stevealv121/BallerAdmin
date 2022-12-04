@@ -22,6 +22,10 @@ class CalendarDataService {
         return httpCommon.put("calendar/event", event);
     }
 
+    deleteEvent(id) {
+        return httpCommon.delete(`calendar/event/${id}`);
+    }
+
 }
 
 export default new CalendarDataService();
